@@ -1,0 +1,3 @@
+google-genai>=2.10.0
+typer>=0.26.8
+rich>=15.0.0
