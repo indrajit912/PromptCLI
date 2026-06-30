@@ -76,11 +76,32 @@ PromptCLI/
 
 ## Installation
 
-You can install PromptCLI locally in editable mode so that the `promptcli` command becomes available globally on your system.
+You can install PromptCLI directly from the official GitHub repository.
 
-1. Clone or navigate to the project directory:
+### Recommended (using pipx)
+
+`pipx` is the recommended installation method because it installs PromptCLI in an isolated environment while making the `promptcli` command globally available on your machine.
+
+```bash
+pipx install git+https://github.com/indrajit912/PromptCLI.git
+```
+
+### Alternative (using pip)
+
+You can also install PromptCLI using `pip` inside your active virtual environment:
+
+```bash
+pip install git+https://github.com/indrajit912/PromptCLI.git
+```
+
+### Local Development Installation
+
+If you are modifying PromptCLI or running the test suite locally:
+
+1. Clone and navigate to the repository:
    ```bash
-   cd C:\Users\indra\Documents\hello_world\PromptCLI
+   git clone https://github.com/indrajit912/PromptCLI.git
+   cd PromptCLI
    ```
 
 2. Create and activate a virtual environment:
@@ -95,13 +116,12 @@ You can install PromptCLI locally in editable mode so that the `promptcli` comma
      source .venv/bin/activate
      ```
 
-3. Install the package:
+3. Install the package in editable development mode:
    ```bash
-   pip install .
+   pip install -e .
    ```
-   *(Or in editable development mode: `pip install -e .`)*
 
-Once installed, you can run the CLI using the `promptcli` executable command directly:
+Once installed, you can invoke the CLI using the `promptcli` command directly:
 ```bash
 promptcli --help
 ```
