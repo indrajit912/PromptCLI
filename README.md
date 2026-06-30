@@ -1,65 +1,47 @@
 # PromptCLI – AI Prompt Management Toolkit
 
-PromptCLI is a modern Python command-line utility powered by the **google-genai** SDK. It allows you to organize prompt files in any directory, run them against Google's Gemini models, and store the output in a clean, structured directory. It is built with a focus on developer experience, featuring beautiful terminal formatting with **Rich**, comprehensive error handling, and robust key management.
+PromptCLI is a modern Python command-line environment powered by the **google-genai** SDK. It enables developers and prompt engineers to manage prompt projects, run prompts against Google's Gemini models, and organize generated outputs into a clean folder structure.
 
-With PromptCLI, you can store your prompt projects anywhere on your filesystem (e.g. `./expensewise`, `D:\Projects\ExpenseWise`, or `../my-prompts`). As long as your project directory contains a `prompts/` directory, PromptCLI will operate on it and generate outputs into a corresponding `outputs/` directory.
+Featuring beautiful terminal formatting with **Rich**, real-time progress bars, and secure API key storage, PromptCLI serves as an all-in-one CLI cockpit. Users rarely need to leave their shell to manage their entire prompt-engineering lifecycle.
 
 ---
 
 ## Table of Contents
 
-- [Project Structure](#project-structure)
+- [Overview](#overview)
 - [Requirements](#requirements)
 - [Installation](#installation)
-- [Gemini API Key Configuration](#gemini-api-key-configuration)
-- [Command Usage Guide](#command-usage-guide)
-  - [1. Creating a Prompt Project](#1-creating-a-prompt-project)
-  - [2. Listing Prompts](#2-listing-prompts)
-  - [3. Running a Single Prompt](#3-running-a-single-prompt)
-  - [4. Running All Prompts (Feed All)](#4-running-all-prompts-feed-all)
-  - [5. API Key Management](#5-api-key-management)
-- [Help Manual & Banner](#help-manual--banner)
-- [Exit Codes](#exit-codes)
-- [Development and Testing](#development-and-testing)
-- [Future Extensibility](#future-extensibility)
+- [Configuration & Settings](#configuration--settings)
+- [Path Resolution Rules](#path-resolution-rules)
+- [Command Reference](#command-reference)
+  - [1. Workspace Management (`workspace`)](#1-workspace-management-workspace)
+  - [2. Project Management (`project`)](#2-project-management-project)
+  - [3. Prompt Management (`prompt`)](#3-prompt-management-prompt)
+  - [4. Output Management (`output`)](#4-output-management-output)
+  - [5. API Key Management (`gemini-key`)](#5-api-key-management-gemini-key)
+- [Practical Examples](#practical-examples)
+- [Troubleshooting & FAQ](#troubleshooting--faq)
+- [Development Setup](#development-setup)
+- [Contribution Guidelines](#contribution-guidelines)
+- [License Information](#license-information)
 
 ---
 
-## Project Structure
+## Overview
 
-A PromptCLI project directory follows this structure at any location on your filesystem:
+A PromptCLI project directory holds a strict, standard structure:
 
 ```text
-<project-directory>/             # Any folder on your machine (e.g., ./expensewise)
-├── prompts/                    # Directory containing your prompt files (.txt, .md, etc.)
+<project-directory>/             # Any folder (e.g., ./expensewise or workspace project)
+├── prompts/                    # Directory containing prompt text files
 │   ├── hello.txt
-│   └── summary.md
-└── outputs/                    # Directory containing generated Gemini responses (.md)
+│   └── summarize-report.md
+└── outputs/                    # Directory containing generated Gemini responses
     ├── hello.md
-    └── summary.md
+    └── summarize-report.md
 ```
 
-The PromptCLI repository structure is organized as:
-
-```text
-PromptCLI/
-├── promptcli/                  # Core package directory
-│   ├── __init__.py
-│   ├── cli.py                  # CLI command routes and dynamic parser
-│   ├── config.py               # Constants and configuration
-│   ├── core.py                 # File searching & Google GenAI SDK integration
-│   ├── key_manager.py          # API key file read/writes
-│   └── ui.py                   # Rich banner, table formatter, & status print utilities
-├── tests/                      # Comprehensive unit test suites
-│   ├── test_cli.py
-│   ├── test_core.py
-│   └── test_key_manager.py
-├── main.py                     # Entry point script
-├── pyproject.toml              # Build backend, dependencies, and test configurations
-├── requirements.txt            # Runtime dependencies list
-├── LICENSE                     # MIT License
-└── README.md                   # Project documentation (this file)
-```
+PromptCLI automates this directory creation, lets you open files directly in terminal editors (like `vim`), lists prompts or outputs, runs prompts, and updates your responses in real time.
 
 ---
 
@@ -68,7 +50,7 @@ PromptCLI/
 * **Python:** 3.12 or newer
 * **Dependencies:**
   * `google-genai` (Official Google GenAI SDK)
-  * `typer` (Modern CLI builder)
+  * `typer` (Modern CLI library)
   * `rich` (Terminal styling, tables, and progress bars)
   * `pytest` (For testing)
 
@@ -80,7 +62,7 @@ You can install PromptCLI directly from the official GitHub repository.
 
 ### Recommended (using pipx)
 
-`pipx` is the recommended installation method because it installs PromptCLI in an isolated environment while making the `promptcli` command globally available on your machine.
+`pipx` is the recommended installation method because it installs PromptCLI in an isolated environment while making the `promptcli` command globally available:
 
 ```bash
 pipx install git+https://github.com/indrajit912/PromptCLI.git
@@ -94,9 +76,208 @@ You can also install PromptCLI using `pip` inside your active virtual environmen
 pip install git+https://github.com/indrajit912/PromptCLI.git
 ```
 
-### Local Development Installation
+---
 
-If you are modifying PromptCLI or running the test suite locally:
+## Configuration & Settings
+
+PromptCLI stores its configuration file (`settings.json`) in standard, platform-specific config directories:
+* **Windows:** `%APPDATA%\PromptCLI\settings.json`
+* **Linux/macOS:** `~/.config/promptcli/settings.json`
+
+### Default Settings Schema
+
+```json
+{
+    "workspace_dir": "C:\\Users\\username\\Documents\\ai-prompts",
+    "editor": "vim"
+}
+```
+
+### Default Workspace Fallback
+
+If you have not configured a workspace directory, PromptCLI automatically falls back to:
+```text
+~/Documents/ai-prompts
+```
+On first use, if this directory does not exist, PromptCLI will offer to create it automatically. You can override it at any time using `promptcli workspace set <dir>`.
+
+### Editor Configuration
+
+PromptCLI integrates with terminal editors to open prompts and outputs. The default editor is `vim`, but you can customize this in `settings.json` to anything on your system PATH (e.g., `nano`, `nvim`, `code --wait`, `notepad`, `helix`).
+
+---
+
+## Path Resolution Rules
+
+When you pass a project argument (e.g., `<project>`) to any Command, PromptCLI resolves it using the following hierarchy:
+
+1. **Explicit Path Check:** If the path exists on disk, is absolute, starts with `.`, or contains path separators (`/` or `\`), it is used directly (e.g., `./expensewise`, `D:\Projects\Thesis`).
+2. **Workspace Fallback:** If not, and a default workspace is configured (e.g., `D:\AI-Prompts`), PromptCLI checks if `<workspace>/<project>` exists.
+3. **CWD Fallback:** If no workspace is configured, it defaults to checking relative to the current working directory (`./<project>`).
+
+---
+
+## Command Reference
+
+### 1. Workspace Management (`workspace`)
+
+Manage default workspace folders.
+
+* **Set default workspace:**
+  ```bash
+  promptcli workspace set <directory-path>
+  ```
+  *Resolves the absolute path and registers it in config.*
+* **Show configured workspace:**
+  ```bash
+  promptcli workspace show
+  ```
+* **Show workspace status:**
+  ```bash
+  promptcli workspace status
+  ```
+  *Prints path, verifies existence, and counts/lists active projects.*
+* **Clear workspace config:**
+  ```bash
+  promptcli workspace clear
+  ```
+
+---
+
+### 2. Project Management (`project`)
+
+Manage prompt projects.
+
+* **Create a new project:**
+  ```bash
+  promptcli project create <project-name>
+  ```
+  *Initializes a folder with prompts/ and outputs/ structures. (You can also use the shortcut: `promptcli create <project-name>`).*
+* **Delete a project:**
+  ```bash
+  promptcli project delete <project-name>
+  ```
+  *Deletes the folder recursively after user confirmation.*
+* **List all projects in workspace:**
+  ```bash
+  promptcli project list
+  ```
+  *Lists projects with their prompt and output file counts in a Rich table.*
+
+---
+
+### 3. Prompt Management (`prompt`)
+
+Manage prompt files inside projects.
+
+* **Create a prompt:**
+  ```bash
+  promptcli prompt create <project> <prompt-name>
+  ```
+  *Creates a blank file under `prompts/` (default extension `.txt`, override with `--extension` / `-e`) and opens it in the configured editor.*
+* **Edit a prompt:**
+  ```bash
+  promptcli prompt edit <project> <prompt-name>
+  ```
+  *Opens the prompt file in the configured editor (e.g., `vim`).*
+* **Delete a prompt:**
+  ```bash
+  promptcli prompt delete <project> <prompt-name>
+  ```
+  *Asks for confirmation, deletes the prompt file, and offers to clean up the corresponding generated output file.*
+* **List prompts:**
+  ```bash
+  promptcli prompt list <project>
+  ```
+  *Displays prompt name, extension, file size, and last modified timestamp in a styled table.*
+
+---
+
+### 4. Output Management (`output`)
+
+Manage generated prompt outputs.
+
+* **Open an output:**
+  ```bash
+  promptcli output open <project> <prompt-name>
+  ```
+  *Opens `outputs/<prompt-name>.md` in your configured editor.*
+* **List outputs:**
+  ```bash
+  promptcli output list <project>
+  ```
+  *Lists outputs in a table with size and modification timestamp.*
+* **Delete an output:**
+  ```bash
+  promptcli output delete <project> <prompt-name>
+  ```
+
+---
+
+### 5. API Key Management (`gemini-key`)
+
+* **Check API Key Status:**
+  ```bash
+  promptcli gemini-key status
+  ```
+* **Save API Key:**
+  ```bash
+  promptcli gemini-key --save
+  ```
+  *Prompts for input with hidden characters and saves it securely in `.gemini-api-key`.*
+
+---
+
+## Practical Examples
+
+### Typical Workflow: Setting up and running prompts
+
+```bash
+# 1. Check Gemini API key status
+promptcli gemini-key status
+
+# 2. Configure a workspace directory
+promptcli workspace set ~/Documents/ai-prompts
+
+# 3. Create a project
+promptcli project create expensewise
+
+# 4. Create a prompt (will open in your default editor automatically)
+promptcli prompt create expensewise summarize-report --extension .txt
+
+# 5. List prompts in the project
+promptcli prompt list expensewise
+
+# 6. Generate Gemini output for the prompt
+promptcli expensewise summarize-report
+
+# 7. Open the generated markdown output file
+promptcli output open expensewise summarize-report
+```
+
+---
+
+## Troubleshooting & FAQ
+
+#### Q: I get a `FileNotFoundError` or "editor not found" error when creating/editing files.
+**A:** This happens because your configured editor (default: `vim`) is not installed or available on your system's PATH. Open your configuration `settings.json` (printed in the error message) and change `"editor"` to an editor available on your machine (e.g., `"notepad"` on Windows, `"nano"` on Linux).
+
+#### Q: How do I run a prompt without typing `promptcli run`?
+**A:** PromptCLI utilizes a dynamic positional parser. Any command that does not begin with a registered subcommand is automatically intercepted. Running `promptcli expensewise summary` translates to `promptcli run expensewise summary`.
+
+#### Q: Windows console gives Unicode encoding errors when printing.
+**A:** PromptCLI automatically reconfigures streams to use UTF-8 on Windows. If problems persist, set the active code page in your command prompt: `chcp 65001`.
+
+### Exit Codes
+* `0` - Success
+* `1` - Error (e.g. project/prompt not found, Gemini API failure, missing configuration)
+* `2` - CLI usage/parsing error
+
+---
+
+## Development Setup
+
+If you want to contribute or run tests locally:
 
 1. Clone and navigate to the repository:
    ```bash
@@ -104,161 +285,36 @@ If you are modifying PromptCLI or running the test suite locally:
    cd PromptCLI
    ```
 
-2. Create and activate a virtual environment:
-   * **Windows (PowerShell):**
-     ```powershell
-     python -m venv .venv
-     .venv\Scripts\Activate.ps1
-     ```
-   * **Linux/macOS:**
-     ```bash
-     python3 -m venv .venv
-     source .venv/bin/activate
-     ```
-
-3. Install the package in editable development mode:
+2. Setup virtual environment:
    ```bash
-   pip install -e .
+   python -m venv .venv
+   .venv\Scripts\Activate.ps1   # Windows
+   source .venv/bin/activate    # Unix
    ```
 
-Once installed, you can invoke the CLI using the `promptcli` command directly:
-```bash
-promptcli --help
-```
+3. Install editable package with dev dependencies:
+   ```bash
+   pip install -e .
+   pip install pytest
+   ```
+
+4. Run tests:
+   ```bash
+   pytest
+   ```
 
 ---
 
-## Gemini API Key Configuration
+## Contribution Guidelines
 
-To call Google's Gemini models, you must provide a Gemini API key. PromptCLI looks for the key in two places:
-1. The `.gemini-api-key` file located in the PromptCLI project root.
-2. The `GEMINI_API_KEY` environment variable.
-
-You can configure the key securely using the CLI (see below).
-
----
-
-## Command Usage Guide
-
-All commands support arbitrary directories passed as relative or absolute paths.
-
-### 1. Creating a Prompt Project
-Initialize a new project structure at the specified directory path.
-```bash
-promptcli create <project-directory-path>
-```
-* **Examples:**
-  * `promptcli create expensewise` (creates `./expensewise` in the current working directory)
-  * `promptcli create ../paper-prompts`
-  * `promptcli create D:\Projects\ExpenseWise`
-* **Behavior:** Creates `<directory>/prompts` and `<directory>/outputs`. If the directories already exist, displays a friendly warning.
-
-### 2. Listing Prompts
-List all prompts inside a project directory's `prompts` folder in a formatted table.
-```bash
-promptcli <project-directory-path> --list
-```
-* **Examples:**
-  * `promptcli ./expensewise --list`
-  * `promptcli D:\Projects\ExpenseWise --list`
-* **Output:** Displays columns for Prompt Name, File Extension, File Size, and Last Modified timestamp.
-
-### 3. Running a Single Prompt
-Generate output for a prompt file and save the result as Markdown.
-```bash
-promptcli <project-directory-path> <prompt-name>
-```
-* **Examples:**
-  * `promptcli ./expensewise hello`
-  * `promptcli D:\Projects\ExpenseWise hello.txt`
-* **Details:**
-  * The file extension is optional. If omitted, PromptCLI searches for matching stems (e.g. `hello.txt`, `hello.md`).
-  * Response is saved to `<project-directory-path>/outputs/<prompt-name>.md`.
-  * If the output file already exists, PromptCLI asks you to confirm (`y/n`) before overwriting.
-  * You can skip confirmation by passing the `-f` or `--force` flag: `promptcli ./expensewise hello --force`.
-
-### 4. Running All Prompts (Feed All)
-Feed every prompt in a project's `prompts` folder to Gemini sequentially.
-```bash
-promptcli <project-directory-path> --feed-all
-```
-* **Examples:**
-  * `promptcli ./expensewise --feed-all`
-  * `promptcli ../paper-prompts --feed-all`
-* **Details:**
-  * Renders a real-time progress bar.
-  * Prompts for overwrite confirmation if an output markdown file already exists (can be bypassed with `--force`).
-  * Prints a summary of successful and failed/skipped generation tasks.
-
-### 5. API Key Management
-#### Check API Key Status
-```bash
-promptcli gemini-key status
-```
-* **Output:** Reports whether the key is configured, empty, or missing.
-
-#### Save API Key
-```bash
-promptcli gemini-key --save
-```
-* **Behavior:** Prompts securely for the key (characters hidden). Saves the key in `.gemini-api-key`. If a key already exists, requests confirmation before overwriting.
+1. Fork the Repository on GitHub.
+2. Create a feature branch (`git checkout -b feature/amazing-feature`).
+3. Write clean Python code conforming to PEP 8 standards.
+4. Ensure all unit tests pass (`pytest`).
+5. Commit your changes and open a Pull Request.
 
 ---
 
-## Help Manual & Banner
+## License Information
 
-### Banner
-When PromptCLI executes any project configuration or execution command, it displays a startup banner containing authorship details:
-```text
-┌────────────────────────────────────────────┐
-│                                            │
-│              PromptCLI                     │
-│     AI Prompt Management Toolkit           │
-│   ──────────────────────────────────────   │
-│   Author   : Indrajit Ghosh                │
-│   Position : Postdoctoral Fellow           │
-│   Institute: IIT Kanpur                    │
-│   Version  : 1.0.0                         │
-│                                            │
-└────────────────────────────────────────────┘
-```
-
-### Help Manual
-Get help for commands and options using `--help`:
-```bash
-promptcli --help
-promptcli create --help
-promptcli gemini-key --help
-```
-
----
-
-## Exit Codes
-
-PromptCLI follows standard exit codes to facilitate automation:
-* `0`: Success (commands executed, list displayed, response generated)
-* `1`: Application/Runtime Error (prompt not found, invalid API key, Gemini connection issues)
-* `2`: Usage Error (invalid flags, missing arguments)
-
----
-
-## Development and Testing
-
-The application uses `pytest` for unit testing. The test suite covers CLI endpoints, file manipulation, stem fallbacks, key management, and API calls (with mock clients).
-
-### Running Tests
-Execute the tests inside the virtual environment:
-```bash
-pytest
-```
-
----
-
-## Future Extensibility
-
-PromptCLI's modular architecture makes it easy to integrate additional capabilities:
-1. **Model Selection:** Add a `--model` option to select other Gemini models (`gemini-2.5-pro`, `gemini-1.5-flash`).
-2. **Parameters Configuration:** Pass system instructions, temperature, top-p, and max tokens.
-3. **Response Streaming:** Support streaming responses directly to stdout.
-4. **Export/Import:** Export generated markdown structures to HTML or PDF, or import prompts from public repositories.
-5. **Project Management:** Add commands to delete, rename, or archive projects.
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.

@@ -6,6 +6,10 @@ from promptcli.core import (
     list_prompts,
     find_prompt_file,
     generate_output,
+    delete_project,
+    list_outputs,
+    delete_prompt_file,
+    delete_output_file,
     ProjectNotFoundError,
     PromptNotFoundError,
 )
@@ -101,3 +105,47 @@ def test_generate_output(tmp_path: Path) -> None:
             model="gemini-2.5-flash",
             contents="Tell a joke",
         )
+
+
+def test_core_delete_and_output_listing(tmp_path: Path) -> None:
+    """Tests project/prompt/output delete functions and output listing."""
+    proj_path = str(tmp_path / "deleteproj")
+    create_project(proj_path)
+    
+    # 1. Test listing empty outputs
+    with pytest.raises(ProjectNotFoundError):
+        list_outputs(str(tmp_path / "nonexistent"))
+        
+    outputs = list_outputs(proj_path)
+    assert len(outputs) == 0
+    
+    # 2. Add an output file and list it
+    out_file = tmp_path / "deleteproj" / "outputs" / "hello.md"
+    out_file.write_text("# Hello", encoding="utf-8")
+    
+    outputs = list_outputs(proj_path)
+    assert len(outputs) == 1
+    assert outputs[0]["name"] == "hello"
+    assert outputs[0]["extension"] == ".md"
+    
+    # 3. Add prompt file and delete it
+    prompt_file = tmp_path / "deleteproj" / "prompts" / "hello.txt"
+    prompt_file.touch()
+    
+    deleted_prompt = delete_prompt_file(proj_path, "hello")
+    assert deleted_prompt == prompt_file
+    assert not prompt_file.exists()
+    
+    # 4. Delete output file
+    deleted_output = delete_output_file(proj_path, "hello")
+    assert deleted_output == out_file
+    assert not out_file.exists()
+    
+    # 5. Delete project recursively
+    delete_project(proj_path)
+    assert not Path(proj_path).exists()
+    
+    # Ensure delete raises ProjectNotFoundError if already deleted
+    with pytest.raises(ProjectNotFoundError):
+        delete_project(proj_path)
+

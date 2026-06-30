@@ -170,3 +170,92 @@ def format_timestamp(timestamp: float) -> str:
     """Formats epoch timestamp into YYYY-MM-DD HH:MM:SS."""
     dt = datetime.datetime.fromtimestamp(timestamp)
     return dt.strftime("%Y-%m-%d %H:%M:%S")
+
+
+def delete_project(project_path_str: str) -> None:
+    """Removes a project directory recursively from the disk.
+    
+    Args:
+        project_path_str: The path to the project directory.
+        
+    Raises:
+        ProjectNotFoundError: If the project directory does not exist.
+    """
+    import shutil
+    project_dir = Path(project_path_str).resolve()
+    if not project_dir.exists():
+        raise ProjectNotFoundError(f"Project directory '{project_path_str}' does not exist.")
+    shutil.rmtree(project_dir)
+
+
+def list_outputs(project_path_str: str) -> List[Dict[str, Any]]:
+    """Lists all outputs in a project outputs directory.
+    
+    Args:
+        project_path_str: The path to the project directory.
+        
+    Returns:
+        A list of output metadata dictionaries.
+        
+    Raises:
+        ProjectNotFoundError: If the project or outputs directory does not exist.
+    """
+    project_dir = Path(project_path_str).resolve()
+    outputs_dir = project_dir / "outputs"
+    
+    if not project_dir.exists() or not outputs_dir.exists():
+        raise ProjectNotFoundError(f"Project directory '{project_path_str}' does not exist or has no outputs.")
+        
+    results = []
+    for file in outputs_dir.iterdir():
+        if file.is_file() and file.suffix == ".md":
+            stat = file.stat()
+            results.append({
+                "name": file.stem,
+                "filename": file.name,
+                "extension": file.suffix,
+                "size_str": format_size(stat.st_size),
+                "size_bytes": stat.st_size,
+                "last_modified": format_timestamp(stat.st_mtime),
+            })
+            
+    # Sort outputs alphabetically by name
+    results.sort(key=lambda x: x["name"].lower())
+    return results
+
+
+def delete_prompt_file(project_path_str: str, prompt_name: str) -> Path:
+    """Finds and deletes a prompt file by name.
+    
+    Args:
+        project_path_str: The path to the project directory.
+        prompt_name: The name of the prompt (extension optional).
+        
+    Returns:
+        The Path to the deleted prompt file.
+    """
+    prompt_file = find_prompt_file(project_path_str, prompt_name)
+    prompt_file.unlink()
+    return prompt_file
+
+
+def delete_output_file(project_path_str: str, prompt_name: str) -> Path:
+    """Finds and deletes the corresponding output file for a prompt.
+    
+    Args:
+        project_path_str: The path to the project directory.
+        prompt_name: The name of the prompt / output file stem.
+        
+    Returns:
+        The Path to the deleted output file.
+        
+    Raises:
+        FileNotFoundError: If the output file is not found.
+    """
+    project_dir = Path(project_path_str).resolve()
+    output_file = project_dir / "outputs" / f"{prompt_name}.md"
+    if not output_file.is_file():
+        raise FileNotFoundError(f"Output file '{prompt_name}.md' not found in project '{project_path_str}'.")
+    output_file.unlink()
+    return output_file
+
